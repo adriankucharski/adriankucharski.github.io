@@ -13,16 +13,37 @@
             const canvas_element = document.querySelector('#canvas_element');
             const ctx = canvas_element.getContext('2d');
 
-            let color_flag = true;
+            let color_flag = false;
             const handler_zadanie_1 = () => {
                 ctx.fillStyle = color_flag ? '#00ff00' : '#0000ff';
                 ctx.beginPath();
-                ctx.arc(150, 200, 100, 0, 2 * Math.PI);
+                ctx.arc(80, 200, 75, 0, 2 * Math.PI);
                 ctx.fill();
                 color_flag = !color_flag;
             };
+
+
+            let it = 0;
+            let reducer = -1;
+            let [b, g] = [0, 255];
+            const handler_zadanie_2 = () => {
+                if (it === 100 || it <= 0) {
+                    reducer = -reducer;
+                }
+                if (it < 50) [b, g] = [Math.floor(255 * it / 50), 255];
+                else[b, g] = [255, Math.floor(255 * ((50 - it % 50) / 50))];
+                it += reducer;
+
+                ctx.fillStyle = `rgb(0, ${b}, ${g})`;
+                ctx.beginPath();
+                ctx.arc(250, 200, 75, 0, 2 * Math.PI);
+                ctx.fill();
+            };
+
             handler_zadanie_1();
+            handler_zadanie_2();
             setInterval(handler_zadanie_1, 1000);
+            setInterval(handler_zadanie_2, 20);
         })();
     </script>
 </body>
