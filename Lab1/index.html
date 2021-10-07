@@ -4,29 +4,38 @@
 </head>
 
 <body>
-    <h2>Laboratorium 1</h2>
-    <canvas id="canvas_element" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <h2>Laboratorium 1 Zadanie 1.</h2>
+    <canvas id="canvas_element1" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <h2>Laboratorium 1 Zadanie 2.</h2>
+    <canvas id="canvas_element2" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <h2>Laboratorium 1 Zadanie 3.</h2>
+    <canvas id="canvas_element3" width="800px" height="600px" style="border: 1px solid;"></canvas>
 
     <script>
         (function () {
-            const [w, h] = [800, 600];
-            const canvas_element = document.querySelector('#canvas_element');
+            const canvas_element = document.querySelector('#canvas_element1');
             const ctx = canvas_element.getContext('2d');
 
             let color_flag = false;
-            const handler_zadanie_1 = () => {
+            const handler = () => {
                 ctx.fillStyle = color_flag ? '#00ff00' : '#0000ff';
                 ctx.beginPath();
-                ctx.arc(80, 200, 75, 0, 2 * Math.PI);
+                ctx.arc(400, 300, 250, 0, 2 * Math.PI);
                 ctx.fill();
                 color_flag = !color_flag;
             };
+            handler();
+            setInterval(handler, 1000);
+        })();
 
+        (function () {
+            const canvas_element = document.querySelector('#canvas_element2');
+            const ctx = canvas_element.getContext('2d');
 
             let it = 0;
             let reducer = -1;
             let [b, g] = [0, 255];
-            const handler_zadanie_2 = () => {
+            const handler = () => {
                 if (it === 100 || it <= 0) {
                     reducer = -reducer;
                 }
@@ -36,14 +45,50 @@
 
                 ctx.fillStyle = `rgb(0, ${b}, ${g})`;
                 ctx.beginPath();
-                ctx.arc(250, 200, 75, 0, 2 * Math.PI);
+                ctx.arc(400, 300, 250, 0, 2 * Math.PI);
                 ctx.fill();
             };
+            handler();
+            setInterval(handler, 20);
+        })();
 
-            handler_zadanie_1();
-            handler_zadanie_2();
-            setInterval(handler_zadanie_1, 1000);
-            setInterval(handler_zadanie_2, 20);
+        (function () {
+            const canvas_element = document.querySelector('#canvas_element3');
+            const ctx = canvas_element.getContext('2d');
+
+            let y_dir = -1;
+            let y = 0;
+
+            let it = 0;
+            let reducer = -1;
+            let [b, g] = [0, 255];
+            const handler = () => {
+                if (it === 100 || it <= 0) {
+                    reducer = -reducer;
+                }
+                if (it < 50) [b, g] = [Math.floor(255 * it / 50), 255];
+                else[b, g] = [255, Math.floor(255 * ((50 - it % 50) / 50))];
+                it += reducer;
+
+
+                ctx.fillStyle = `rgb(255, 255, 255)`;
+                ctx.beginPath();
+                ctx.arc(400, 300 + y, 300, 0, 2 * Math.PI);
+                ctx.fill();
+
+                if (y === 50 || y === -50) {
+                    y_dir = -y_dir;
+                }
+                y += y_dir;
+
+
+                ctx.fillStyle = `rgb(0, ${b}, ${g})`;
+                ctx.beginPath();
+                ctx.arc(400, 300 + y, 250, 0, 2 * Math.PI);
+                ctx.fill();
+            };
+            handler();
+            setInterval(handler, 20);
         })();
     </script>
 </body>
