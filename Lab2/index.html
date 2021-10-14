@@ -21,13 +21,16 @@
             let distance = Math.sqrt((distX * distX) + (distY * distY));
             return distance <= radius;
         }
-        (async function () {
+        async function run_animation() {
             const width = 100;
             const height = 50;
             const block_xy = [];
 
             const canv = document.querySelector('#canvas_element');
             const ctx = canv.getContext("2d");
+            ctx.fillStyle = '#ffffff';
+            ctx.clearRect(0, 0, canv.width, canv.height);
+
             ctx.fillStyle = '#000000';
             for (let i = 0; i < 5; ++i) {
                 const [x, y] = [100 + i * width, 200 + i * height];
@@ -35,11 +38,11 @@
                 ctx.rect(x, y, width, height);
                 ctx.fill();
                 block_xy.push([x, y]);
-                // await new Promise(x => setTimeout(x, 1000));
+                await new Promise(x => setTimeout(x, 1000));
             }
 
             let [ball_x, ball_y, ball_r] = [150, 100, 20];
-            for (let i = 0; i < 1000; ++i) {
+            while (ball_y < canv.height) {
                 ctx.beginPath();
                 ctx.fillStyle = "#ffffff";
                 ctx.arc(ball_x, ball_y, ball_r + 1, 0, Math.PI * 2);
@@ -47,8 +50,8 @@
 
                 let flag = 0;
                 for (const [x, y] of block_xy)
-                    flag += detectCollisions(ball_x, ball_y, ball_r, x, y, width, height);
-                flag === 0 ? ball_y += 1 : ball_x += 1;
+                    flag += detectCollisions(ball_x, ball_y, ball_r + 2, x, y, width, height);
+                flag === 0 ? ball_y += 2 : ball_x += 1;
 
                 ctx.beginPath();
                 ctx.arc(ball_x, ball_y, ball_r, 0, Math.PI * 2);
@@ -56,6 +59,13 @@
                 ctx.fill();
                 await new Promise(x => setTimeout(x, 10));
             }
+
+            return 0;
+        }
+
+        (async function () {
+            for (; ;)
+                await run_animation();
 
         })();
     </script>
