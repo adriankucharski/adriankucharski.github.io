@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<head>
+</head>
+
+<body>
+    <h2>Laboratorium 3</h2>
+    <p>Punkty: <span id="points">0</span></p>
+    <canvas id="canvas_element" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <script>
+        const detectCircleCollisions = (c1x, c1y, c1r, c2x, c2y, c2r) => {
+            let distX = c1x - c2x;
+            let distY = c1y - c2y;
+            let distance = Math.sqrt((distX * distX) + (distY * distY));
+            return distance <= c1r + c2r;
+        }
+        const getRandomInt = (min, max) => {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        const Game = {
+            pointsElement: document.querySelector('#points'),
+            canvas: document.querySelector('#canvas_element'),
+            context: undefined,
+            interval: undefined,
+            points: 0,
+
+            posX: 320,
+            posY: 580,
+            playerWidth: 80,
+            playerHeight: 20,
+            speedX: 0,
+
+            ballX: -1,
+            ballY: 50,
+            ballR: 50,
+
+            bulletR: 10,
+            bulletSpeed: 5,
+            bulletCDR: 1000,
+            canShot: true,
+            bullets: [],
+
+            removeObstackle: () => {
+                const ctx = Game.context;
+                ctx.beginPath();
+                ctx.arc(Game.ballX, Game.ballY, Game.ballR + 1, 0, Math.PI * 2);
+                ctx.fillStyle = "#fff";
+                ctx.fill();
+                Game.ballX = -1;
+            },
+            removeBullet: (index, destroy = false) => {
+                const ctx = Game.context;
+                const [x, y] = Game.bullets[index];
+                ctx.beginPath();
+                ctx.arc(x, y, Game.bulletR + 1, 0, Math.PI * 2);
+                ctx.fillStyle = "#fff";
+                ctx.fill();
+                if (destroy)
+                    Game.bullets.splice(index, 1);
+            },
+            updateObstackle: () => {
+                const ctx = Game.context;
+                if (Game.ballX === -1) {
+                    Game.ballX = getRandomInt(Game.ballR, Game.canvas.width - Game.ballR);
+                }
+                else {
+                    ctx.beginPath();
+                    ctx.arc(Game.ballX, Game.ballY, Game.ballR, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ff95DD";
+                    ctx.fill();
+                }
+            },
+            updateBullets: () => {
+                const ctx = Game.context;
+                for (let i = 0; i < Game.bullets.length; ++i) {
+                    Game.removeBullet(i);
+
+                    const [x, y] = Game.bullets[i];
+                    ctx.beginPath();
+                    ctx.arc(x, y - Game.bulletSpeed, Game.bulletR, 0, Math.PI * 2);
+                    ctx.fillStyle = "#0095DD";
+                    ctx.fill();
+                    Game.bullets[i][1] -= Game.bulletSpeed;
+
+                    if (y - Game.bulletSpeed < 0)
+                        Game.removeBullet(i, true);
+                }
+            },
+            updatePlayer: () => {
+                Game.context.fillStyle = '#fff';
+                Game.context.fillRect(Game.posX, Game.posY, Game.playerWidth, Game.playerHeight);
+
+                if (Game.posX + Game.speedX > 0 && Game.posX + Game.speedX + Game.playerWidth < Game.canvas.width)
+                    Game.posX += Game.speedX;
+                Game.context.fillStyle = '#000';
+                Game.context.fillRect(Game.posX, Game.posY, Game.playerWidth, Game.playerHeight);
+            },
+            updatePoints: () => {
+                Game.pointsElement.innerText = Game.points;
+            },
+            checkCollision: () => {
+                if (Game.ballX !== -1) {
+                    for (let i = 0; i < Game.bullets.length; ++i) {
+                        const [x, y] = Game.bullets[i];
+                        if (detectCircleCollisions(x, y, Game.bulletR, Game.ballX, Game.ballY, Game.ballR)) {
+                            Game.removeBullet(i, true);
+                            Game.points += 1;
+                            Game.removeObstackle();
+                            break;
+                        }
+                    }
+                }
+            },
+            clear: function () {
+                Game.context.clearRect(0, 0, Game.canvas.width, Game.canvas.height);
+            },
+            updateArea: function () {
+                Game.updatePlayer();
+                Game.updateBullets();
+                Game.updateObstackle();
+                Game.checkCollision();
+                Game.updatePoints();
+            },
+            start: function () {
+                Game.context = Game.canvas.getContext('2d');
+                Game.interval = setInterval(Game.updateArea, 60);
+                window.addEventListener('keydown', (e) => {
+                    if (e.keyCode === 37) Game.speedX = -10;
+                    if (e.keyCode === 39) Game.speedX = +10;
+                    if (e.keyCode === 32 && Game.canShot) {
+                        Game.bullets.push([Game.posX + Game.playerWidth / 2, Game.posY - Game.playerHeight + Game.bulletR / 2])
+                        Game.canShot = false;
+                        setTimeout(() => Game.canShot = true, Game.bulletCDR);
+                    }
+                })
+                window.addEventListener('keyup', (e) => {
+                    Game.speedX = 0;
+                })
+            }
+        };
+
+        (function () {
+            Game.start();
+        })();
+    </script>
+</body>
+
+</html>
