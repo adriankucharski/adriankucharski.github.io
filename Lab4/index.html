@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<head>
+</head>
+
+<body>
+    <h2>Laboratorium 4</h2>
+    <h3 id="game_status">GO!</h3>
+    <canvas id="canvas_element" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <script>
+        const getRandomInt = (min, max) => {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        class Car {
+            constructor(x, canvas, minY, maxY, width = 120, height = 200) {
+                this.ctx = canvas.getContext('2d');
+                this.x = x;
+                this.y = canvas.height - height;
+
+                this.width = width;
+                this.height = height;
+                this.wheelWidth = 20;
+                this.wheelHeight = 40;
+
+                this.minY = minY;
+                this.maxY = maxY;
+
+                this.carColor = '#aa2266';
+            }
+
+            draw() {
+                this.ctx.fillStyle = this.carColor;
+                this.ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(this.x - this.wheelWidth, this.y, this.wheelWidth, this.wheelHeight);
+                this.ctx.fillRect(this.x + this.width, this.y, this.wheelWidth, this.wheelHeight);
+                this.ctx.fillRect(this.x - this.wheelWidth, this.y + this.height - this.wheelHeight, this.wheelWidth, this.wheelHeight);
+                this.ctx.fillRect(this.x + this.width, this.y + this.height - this.wheelHeight, this.wheelWidth, this.wheelHeight);
+            }
+
+            move(x) {
+                let newX = this.x + x;
+                if (newX > (this.minY + this.wheelWidth / 2) && newX < (this.maxY - this.wheelWidth / 2 - this.width))
+                    this.x = newX;
+            }
+
+            detectCollision(rx, ry, rw, rh) {
+                const x = this.x - this.wheelWidth;
+                const w = this.width + 2 * this.wheelWidth;
+                const isDetected = (x < rx + rw &&
+                    x + w > rx &&
+                    this.y < ry + rh &&
+                    this.height + this.y > ry);
+                this.carColor = isDetected ? '#aa2266' : '#002211';
+                return isDetected;
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.canvas = document.querySelector('#canvas_element');
+                this.ctx = this.canvas.getContext('2d');
+
+                this.midLineWidth = 30;
+                this.midLineHeight = 50;
+                this.midLineY = [0, 100, 200, 300, 400, 500, 600];
+
+                this.borderLineWidth = 60;
+                this.borderLineWHeight = 100;
+                this.borderLineY = [-100, 0, 100, 200, 300, 400, 500, 600];
+
+                this.lineStep = 5;
+
+                this.obstackleY = undefined;
+                this.obstackleX = undefined;
+                this.obstackleWidth = 250;
+                this.obstackleHeight = 200;
+                this.obstackleStepY = 5;
+                this.obstackleStepX = -2.5;
+            }
+
+            drawMidLines() {
+                this.ctx.fillStyle = '#fff';
+                for (let i = 0; i < this.midLineY.length; ++i)
+                    this.ctx.fillRect((this.canvas.width - this.midLineWidth) / 2, this.midLineY[i], this.midLineWidth, this.midLineHeight);
+
+                this.midLineY = this.midLineY.map(x => {
+                    let newX = x + this.lineStep;
+                    return newX > (this.canvas.height + this.midLineHeight) ? -this.midLineHeight + this.lineStep : newX;
+                });
+            }
+
+            drawBroder() {
+                for (let i = 0; i < this.borderLineY.length; ++i) {
+                    this.ctx.fillStyle = i % 2 ? '#fff' : '#f00';
+                    this.ctx.fillRect(0, this.borderLineY[i], this.borderLineWidth, this.borderLineWHeight);
+                    this.ctx.fillRect(this.canvas.width - this.borderLineWidth, this.borderLineY[i], this.borderLineWidth, this.borderLineWHeight);
+                }
+
+                this.borderLineY = this.borderLineY.map(x => {
+                    let newX = x + this.lineStep;
+                    return newX > (this.canvas.height + this.borderLineWHeight) ? -this.borderLineWHeight + this.lineStep : newX;
+                });
+            }
+
+            drawObstackle() {
+                if (this.obstackleX === undefined) {
+                    this.obstackleX = getRandomInt(this.borderLineWidth, this.canvas.width - this.obstackleWidth - this.borderLineWidth);
+                    this.obstackleY = -this.obstackleHeight;
+                }
+
+                this.ctx.fillStyle = '#4455cc';
+                this.ctx.fillRect(this.obstackleX, this.obstackleY, this.obstackleWidth, this.obstackleHeight);
+
+
+                this.obstackleY += this.obstackleStepY;
+                this.obstackleX += this.obstackleStepX;
+
+                if (this.obstackleX > this.canvas.width - this.borderLineWidth - this.obstackleWidth) {
+                    this.obstackleX = this.canvas.width - this.borderLineWidth - this.obstackleWidth;
+                    this.obstackleStepX = -this.obstackleStepX;
+                }
+                if (this.obstackleX < this.borderLineWidth) {
+                    this.obstackleX = this.borderLineWidth;
+                    this.obstackleStepX = -this.obstackleStepX;
+                }
+                if (this.obstackleY > this.canvas.height)
+                    this.obstackleX = undefined;
+            }
+
+            drawBoard() {
+                this.ctx.fillStyle = '#aaa';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            start() {
+                const car = new Car(200, this.canvas, this.borderLineWidth, this.canvas.width - this.borderLineWidth);
+                let MOVE = 0;
+
+                window.addEventListener('keydown', (e) => {
+                    if (e.keyCode === 37) MOVE = -10;
+                    if (e.keyCode === 39) MOVE = +10;
+                })
+                window.addEventListener('keyup', (e) => {
+                    if (e.keyCode === 37 || e.keyCode === 39) MOVE = 0;
+                });
+
+                const intrval = setInterval(() => {
+                    car.move(MOVE);
+                    const isDetected = car.detectCollision(this.obstackleX, this.obstackleY, this.obstackleWidth, this.obstackleHeight);
+
+                    this.drawBoard();
+                    this.drawBroder();
+                    this.drawMidLines();
+                    this.drawObstackle();
+                    car.draw();
+
+                    if (isDetected) {
+                        clearInterval(intrval);
+                        document.querySelector("#game_status").innerText = 'Game over!';
+                    }
+                }, 50);
+            }
+        }
+
+        (function () {
+            const game = new Game();
+            game.start();
+        })();
+    </script>
+</body>
+
+</html>
