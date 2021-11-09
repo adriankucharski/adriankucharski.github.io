@@ -6,7 +6,6 @@
 <body>
     <h2>Laboratorium 5</h2>
     <h3 id="game_status">GO!</h3>
-    <h3>Speed <span id="speed"></span></h3>
     <canvas id="canvas_element" width="800px" height="600px" style="border: 1px solid;"></canvas>
     <script>
         const rotateCanvas = (degree, canvas) => {
@@ -307,7 +306,7 @@
                         // this.bullets.push(new Rectangle(x + w / 2, this.canvas, y, 15, 15, -20, '#322d31'));
                         const canShootInterval = setTimeout(() => CAN_SHOOT = true, RELOAD_TIME)
                     }
-                    const isDetected = false;// car.detectCollision(this.obstackleX, this.obstackleY, this.obstackleWidth, this.obstackleHeight);
+                    const isDetected = car.detectCollision(this.obstackleX, this.obstackleY, this.obstackleWidth, this.obstackleHeight);
                     for (let i = this.bonuses.length - 1; i >= 0; --i) {
                         const bonus = this.bonuses[i];
                         const [rx, ry, rw, rh] = bonus.position();
@@ -317,7 +316,6 @@
                             this.bonuses.splice(i, 1);
                         }
                     }
-                    document.querySelector('#speed').innerText = SPEED;
 
                     this.clearContext();
                     this.drawBoard();
@@ -328,6 +326,7 @@
                     this.drawBullets();
                     this.drawText(`Points: ${POINTS}`);
                     this.drawText(`Reload time (ms): ${RELOAD_TIME}`, 10, 75);
+                    this.drawText(`Speed: ${SPEED}`, 10, 100);
                     car.draw();
 
                     if (isDetected) {
