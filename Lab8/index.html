@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<head>
+</head>
+
+<body>
+    <h2>Laboratorium 8</h2>
+    <h3 id="game_status">GO!</h3>
+    <canvas id="canvas_element" width="800px" height="600px" style="border: 1px solid;"></canvas>
+    <script>
+        let keys = {};
+        let lastkey = false;
+        document.addEventListener('keydown', function (evt) {
+            keys[evt.keyCode] = true;
+        });
+        document.addEventListener('keyup', function (evt) {
+            keys[evt.keyCode] = false;
+        });
+
+
+
+        const canvas = document.getElementById('canvas_element');
+        const ctx = canvas.getContext('2d');
+
+        let jump = false;
+        let floorY = canvas.height - 50 - 55;
+
+
+        const getRandomInt = (min, max) => {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min)) + min;
+        }
+
+        class ImageObject {
+            constructor(image, x, y, width = 40, height = 10, speed = 15, a = 0) {
+                this.y = y;
+                this.x = x;
+                this.speed = speed;
+                this.width = width;
+                this.height = height;
+                this.a = a;
+                this.gravity_speed = 0;
+                this.image = image;
+            }
+            move(x = this.speed) {
+                this.gravity_speed += this.a;
+                this.x += x + this.gravity_speed;
+            }
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+            isVisible() {
+                return canvas.height > this.y || this.y < 0;
+            }
+            position() {
+                return [this.x, this.y, this.width, this.height];
+            }
+            detectCollision(rx, ry, rw, rh) {
+                const x = this.x;
+                const w = this.width;
+                const isDetected = (x < rx + rw &&
+                    x + w > rx &&
+                    this.y < ry + rh &&
+                    this.height + this.y > ry);
+                return isDetected;
+            }
+        }
+
+
+        class Car {
+            constructor(x, y, width = 100, height = 40, wheelR = 15) {
+                this.x = x;
+                this.y = y;
+
+                this.width = width;
+                this.height = height;
+                this.wheelR = wheelR;
+
+                this.gravity = -1.5;
+                this.gravitySpeed = 0;
+                this.goDown = false;
+
+                this.carImage = new Image();
+                this.carImage.src = 'car_hevy.png';
+            }
+
+            draw() {
+                ctx.drawImage(this.carImage, this.x, this.y, this.width, this.height + this.wheelR);
+            }
+
+            jump() {
+                if (jump) {
+                    this.gravitySpeed += this.gravity;
+                    this.y += this.gravitySpeed;
+                    if (this.gravitySpeed < this.gravity * 15) {
+                        jump = false;
+                    }
+                } else {
+                    if (this.y >= floorY) {
+                        this.y = floorY;
+                        this.gravitySpeed = 0;
+                        lastkey = false;
+                    }
+                    else {
+                        this.gravitySpeed += Math.abs(this.gravity) + 0.5;
+                        this.y += this.gravitySpeed;
+                    }
+                }
+            }
+
+            position() {
+                return [this.x, this.y, this.width, this.height - this.wheelR];
+            }
+        }
+
+        class TreeObstackle {
+            constructor(x, y, width = 40, height = 120, speed = 15) {
+                this.y = y;
+                this.x = x;
+                this.speed = speed;
+                this.width = width;
+                this.height = height;
+
+                this.treeImage = new Image();
+                this.treeImage.src = 'tree.png';
+                this.isEnabled = true;
+            }
+            move(s = this.speed) {
+                this.x -= s;
+            }
+            draw() {
+                if (this.isEnabled)
+                    ctx.drawImage(this.treeImage, this.x, this.y, this.width + 30, this.height);
+            }
+            isInvisible() {
+                if (this.isEnabled === false)
+                    return false;
+                return !(canvas.width > this.x && this.x > -this.width);
+            }
+            position() {
+                return [this.x, this.y, this.width, this.height];
+            }
+            detectCollision(rx, ry, rw, rh) {
+                if (this.isEnabled === false)
+                    return false;
+                const x = this.x;
+                const w = this.width;
+                const isDetected = (x < rx + rw &&
+                    x + w > rx &&
+                    this.y < ry + rh &&
+                    this.height + this.y > ry);
+                return isDetected;
+            }
+            disable() {
+                this.isEnabled = false;
+                this.x = -100;
+            }
+            enable() {
+                this.isEnabled = true;
+
+            }
+        }
+
+        class Game {
+            constructor() {
+                this.borderLineWidth = 115;
+                this.borderLineWHeight = 50;
+
+                this.borderLineX = Array.from(Array(8).keys()).map(x => x * this.borderLineWidth);
+                this.lineStep = 5;
+                this.heightObstackle = 175;
+
+                this.rockets = [];
+            }
+
+
+            drawBroder() {
+                for (let i = 0; i < this.borderLineX.length; ++i) {
+                    ctx.fillStyle = i % 2 ? '#fff' : '#f00';
+                    ctx.fillRect(this.borderLineX[i], canvas.height - this.borderLineWHeight, this.borderLineWidth, this.borderLineWHeight);
+                }
+                this.borderLineX = this.borderLineX.map(x => {
+                    let newX = x - this.lineStep;
+                    return newX > -this.borderLineWidth ? newX : canvas.width;
+                });
+            }
+
+
+            drawBoard() {
+                ctx.fillStyle = '#aaa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            drawText(text, x = 10, y = 50, color = 'black') {
+                ctx.fillStyle = color;
+                ctx.font = "30px Arial";
+                ctx.fillText(text, x, y);
+            }
+            drawRockets(obstackle) {
+                for (let i = this.rockets.length - 1; i >= 0; --i) {
+                    const rocket = this.rockets[i];
+                    rocket.draw();
+                    rocket.move();
+                    const [x, y, w, h] = rocket.position();
+                    const isDetected = obstackle.detectCollision(x, y, w, h);
+                    if (!rocket.isVisible() || isDetected)
+                        this.rockets.splice(i, 1);
+
+                    if (isDetected) {
+                        obstackle.disable();
+                        setTimeout(() => obstackle.enable(), 500);
+                    }
+                }
+            }
+            clearContext() {
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.restore();
+            }
+            start() {
+                let rand_h = getRandomInt(this.heightObstackle / 2, this.heightObstackle);
+                const car = new Car(150, canvas.height - this.borderLineWHeight - 55);
+                const obstackle = new TreeObstackle(canvas.width, canvas.height - this.borderLineWHeight - rand_h, 40, rand_h);
+
+
+                let SHOOT = false;
+                let CAN_SHOOT = true;
+                const RELOAD_TIME = 2000;
+                const rocketImage = new Image();
+                rocketImage.src = 'rocket.png';
+
+                const rocketSound = new Audio('launch.wav');
+
+                let points = 0;
+                let reolad_progress = 0;
+                const intrval = setInterval(() => {
+                    if (CAN_SHOOT && keys[67]) {
+                        CAN_SHOOT = false;
+                        const [x, y, w, _] = car.position();
+                        this.rockets.push(new ImageObject(rocketImage, x + w, y + 17, 40, 10, 1, 0.35));
+                        const canShootInterval = setTimeout(() => CAN_SHOOT = true, RELOAD_TIME);
+                        reolad_progress = RELOAD_TIME;
+                        rocketSound.play();
+                    }
+                    if (keys[32]) {
+                        if (!lastkey) jump = true;
+                        lastkey = true;
+                    }
+
+
+                    this.clearContext();
+                    this.drawBoard();
+                    this.drawBroder();
+                    this.drawRockets(obstackle);
+                    obstackle.draw();
+                    car.draw();
+                    car.jump();
+                    if (CAN_SHOOT === false && reolad_progress > 0)
+                        this.drawText(`Rocket is reloading ${parseInt(reolad_progress / 100)}`, 10, 30, '#4d9995');
+                    this.drawText(`Points: ${parseInt(points / 10)}`, 10, 70);
+
+
+                    const [x, y, w, h] = car.position();
+                    if (obstackle.detectCollision(x, y, w, h)) {
+                        clearInterval(intrval);
+                        document.getElementById('game_status').innerText = 'Game over!'
+                    }
+
+                    obstackle.move(10);
+                    if (obstackle.isInvisible()) {
+                        rand_h = getRandomInt(this.heightObstackle / 2, this.heightObstackle);
+                        obstackle.x = canvas.width;
+                        obstackle.y = canvas.height - this.borderLineWHeight - rand_h;
+                        obstackle.speed = getRandomInt(5, 15);
+                        obstackle.height = rand_h;
+                    }
+                    points += 1;
+                    reolad_progress -= 15;
+                }, 10);
+            }
+        }
+
+        (function () {
+            const game = new Game();
+            game.start();
+        })();
+    </script>
+</body>
+
+</html>
